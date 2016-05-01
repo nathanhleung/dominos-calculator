@@ -1,0 +1,234 @@
+doctype html
+html
+  head
+    title Domino's Group Order Calculator
+    meta(name='description' content='Calculates profits generated from a Domino\'s group order composed of lava cakes and medium pizzas from the $5.99 deal')
+    meta(name='keywords' content='dominos,pizza,calculator,lava cakes,group order,profit')
+    meta(name='viewport' content='width=device-width,initial-scale=1')
+    meta(charset='utf-8')
+    link(rel='icon' href='/favicon.png')
+    link(rel='stylesheet' href='https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/css/bootstrap.min.css')
+    link(rel='stylesheet' href='https://fonts.googleapis.com/css?family=Playfair+Display:700|Lato')
+    link(rel='stylesheet' href='https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.5.0/css/font-awesome.min.css')
+    link(rel='stylesheet' href='/styles.css')
+  body
+    #app
+      .container-fluid
+        h1 Domino's Group Order Calculator
+        hr
+        p.
+          Order, set prices and margins, get customers and profit!<br>
+          Note: This calculator assumes the use of the 2 for $5.99 coupon
+        .row
+          .col-md-3
+            h2 Purchasing
+            hr
+            h3 Wholesale Order
+            table.table
+              thead
+                tr
+                  th Item
+                  th Quantity
+                  th Pieces
+                  th Price
+                  th Total
+              tbody
+                tr
+                  td Medium Pizza
+                  td
+                    input.form-control(v-model='order.pizza' number)
+                  td 8
+                  td $5.99
+                  td {{ order.pizza * itemData.pizza.cost | currency }}
+                tr
+                  td Lava Cakes
+                  td
+                    input.form-control(v-model='order.lava' number)
+                  td 2
+                  td $3.99
+                  td {{ order.lava * itemData.lava.cost | currency }}
+            h4 Subtotal {{ getSubtotal() | currency }}
+            hr
+            table.table
+              thead
+                tr
+                  th Charge
+                  th Percent
+                  th Cash Amount
+              tbody
+                tr
+                  td Delivery
+                  td N/A
+                  td
+                    input.form-control(v-model='extraCharges.delivery' number)
+                tr
+                  td Tax
+                  td
+                    input.form-control(v-model='extraCharges.tax' number)
+                  td {{ getTax() | currency }}
+                tr
+                  td Tip
+                  td {{ getTipPercentage() | round }}%
+                  td 
+                    input.form-control(v-model='extraCharges.tip' number)
+            p.help-block Minimum of $3 recommended for tip
+            h3 Total {{ getTotal() | currency }}
+          .col-md-4
+            h2 Storefront
+            hr
+            h3 Available Inventory
+            table.table
+              thead
+                tr
+                  th Item
+                  th Quantity
+              tbody
+                tr(
+                  v-bind:class="{ \
+                    'bad': getInventory('pizza') < 0, \
+                  }"
+                )
+                  td Pizza
+                  td {{ getInventory('pizza') }} pieces
+                tr(
+                  v-bind:class="{ \
+                    'bad': getInventory('lava') < 0, \
+                  }"
+                )
+                  td Lavacakes
+                  td {{ getInventory('lava') }} cakes
+            hr
+            h3 Retail Prices
+            .row
+              .col-md-6
+                .form-group
+                  label $ Retail per Slice
+                  input.form-control(v-model='retail.slice' number)
+                  p.help-block.
+                    Per unit is {{ getUnitCostAfterExtra('pizza') | currency }}/slice
+                    <br>
+                    Margin {{ getMargin('pizza') | round }}%
+              .col-md-6
+                .form-group
+                  label $ Retail per Lava Cake
+                  input.form-control(v-model='retail.cake' number)
+                  p.help-block.
+                    Per unit is {{ getUnitCostAfterExtra('lava') | currency }}/cake
+                    <br>
+                    Margin {{ getMargin('lava') | round }}%
+            hr
+            h3 Profit Projections
+            table.table
+              thead
+                tr
+                  th Item
+                  th Current Revenue
+                  th Current Profit
+                  th Projected Revenue
+                  th Projected Profit
+              tbody
+                tr
+                  td Pizza
+                  td {{ getRevenue('pizza') | currency }}
+                  td {{ getProfit('pizza') | currency }}
+                  td {{ getProjectedRevenue('pizza') | currency }}
+                  td {{ getProjectedProfit('pizza') | currency }}
+                tr
+                  td Lava Cakes
+                  td {{ getRevenue('lava') | currency }}
+                  td {{ getProfit('lava') | currency }}
+                  td {{ getProjectedRevenue('lava') | currency }}
+                  td {{ getProjectedProfit('lava') | currency }}
+                tr(
+                  v-bind:class="{ \
+                    'good': (getProfit('pizza') + getProfit('lava')) > 0, \
+                    'bad': (getProfit('pizza') + getProfit('lava')) <= 0 \
+                  }"
+                )
+                  th Total
+                  th {{ (getRevenue('pizza') + getRevenue('lava')) | currency }}
+                  th {{ (getProfit('pizza') + getProfit('lava')) | currency }}
+                  th {{ (getProjectedRevenue('pizza') + getProjectedRevenue('lava')) | currency }}
+                  th {{ (getProjectedProfit('pizza') + getProjectedProfit('lava')) | currency }}
+            p Current Profit After Including Purchase Price {{ (getRevenue('pizza') + getRevenue('lava') - getTotal()) | currency }}
+          .col-md-5
+            h2 Orders
+            hr
+            h3 New Customer
+            .row
+              .col-md-6
+                .form-group
+                  label Name
+                  input.form-control(v-model='newCustomer.name')
+              .col-md-6
+                .form-group
+                  label Amount Paid
+                  input.form-control(v-model='newCustomer.amountPaid' number)
+            .row
+              .col-md-6
+                .form-group
+                  label Slices
+                  input.form-control(v-model='newCustomer.slices' number)
+              .col-md-6
+                .form-group
+                  label Cakes
+                  input.form-control(v-model='newCustomer.cakes' number)
+            h3 Total {{ getCustomerTotal(newCustomer) | currency }}
+            button.btn.btn-primary(v-on:click='addCustomer()') Add Customer
+            hr
+            h3 Customers
+            table.table
+              thead
+                tr
+                  th ID
+                  th Name
+                  th Slices
+                  th Cakes
+                  th Total
+                  th Amount Paid
+                  th Edit
+                  th Delete
+              tbody
+                tr(
+                  v-for='c in customers'
+                  v-bind:class="{ \
+                    'good': getCustomerTotal(c) - c.amountPaid <= 0, \
+                    'bad': getCustomerTotal(c) - c.amountPaid > 0 \
+                  }"
+                )
+                  td {{ $index + 1 }}
+                  td {{ c.name }}
+                  td {{ c.slices }}
+                  td {{ c.cakes }}
+                  td {{ getCustomerTotal(c) | currency }}
+                  td {{ c.amountPaid | currency }}
+                  td
+                    button.btn.btn-info.btn-xs(v-on:click='editCustomer($index)') #[i.fa.fa-edit]
+                  td
+                    button.btn.btn-danger.btn-xs(v-on:click='deleteCustomer($index)' v-bind:disabled='editedCustomer.editing') #[i.fa.fa-trash]
+            div(v-if='editedCustomer.editing')
+              h2 Edit Customer \#{{editedCustomer.index + 1}}
+              .row
+                .col-md-6
+                  .form-group
+                    label Name
+                    input.form-control(v-model='editedCustomer.name')
+                .col-md-6
+                  .form-group
+                    label Amount Paid
+                    input.form-control(v-model='editedCustomer.amountPaid' number)
+              .row
+                .col-md-6
+                  .form-group
+                    label Slices
+                    input.form-control(v-model='editedCustomer.slices' number)
+                .col-md-6
+                  .form-group
+                    label Cakes
+                    input.form-control(v-model='editedCustomer.cakes' number)
+              h3 Total {{ getCustomerTotal(editedCustomer) | currency }}
+              br
+              button.btn.btn-success(v-on:click='saveEditedCustomer()') Save
+              button.btn.btn-info(v-on:click='cancelEdits()') 
+    script(src='https://cdnjs.cloudflare.com/ajax/libs/vue/1.0.13/vue.min.js')
+    script(src='/app.js')
