@@ -1,0 +1,23 @@
+body {
+  margin-bottom: 30px;
+  font-family: Lato;
+}
+h1,
+h2,
+h3,
+h4 {
+  font-family: 'Playfair Display';
+}
+.bad {
+  background-color: #ffc0cb;
+}
+.good {
+  background-color: #9ddfba;
+}
+.btn,
+.form-control {
+  border-radius: 0;
+}
+.form-control {
+  box-shadow: none;
+}
